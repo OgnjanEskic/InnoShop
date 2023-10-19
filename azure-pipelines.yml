@@ -1,0 +1,39 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  buildConfiguration: 'Release' # this will set the build configuration to Release
+
+trigger: none
+
+steps:
+- task: DotNetCoreCLI@2 # this will use the .NET Core CLI task
+  displayName: 'Restore dependencies' # this will show the name of the task in the pipeline run
+  inputs:
+    command: 'restore' # this will run the dotnet restore command
+    projects: '**/*.csproj' # this will restore dependencies for all projects with .csproj extension
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build'
+  inputs:
+    command: 'build'
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration)' # this will use the variable defined earlier
+
+- task: DotNetCoreCLI@2
+  displayName: 'Test'
+  inputs:
+    command: 'test'
+    projects: '**/*.Tests.Unit.csproj' # this will run tests for all projects with .Tests.Unit suffix
+    arguments: '--configuration $(buildConfiguration) --collect:"XPlat Code Coverage"' # this will enable code coverage collection
+
+- task: PublishCodeCoverageResults@1 # this will use the Publish Code Coverage Results task
+  displayName: 'Publish code coverage results'
+  inputs:
+    codeCoverageTool: 'Cobertura' # this will use Cobertura as the code coverage tool
+    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml' # this will use the generated code coverage file
