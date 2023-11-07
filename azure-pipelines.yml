@@ -1,4 +1,5 @@
-# Starter pipeline
+# This is Starter pipeline for InnoShop project
+# If you need to make any change, please make a new feature branch, and update this file, than open PR to merge to main
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
@@ -8,32 +9,126 @@ pool:
 
 variables:
   buildConfiguration: 'Release' # this will set the build configuration to Release
-
 trigger: none
 
 steps:
+- powershell: |
+    $testProjects = Get-ChildItem -Path '**/*.csproj' -Recurse
+    if ($testProjects.Length -eq 0) {
+      Write-Host "##vso[task.setvariable variable=skipTestOrFile;isOutput=true]true"
+    }
+  name: checkIfExists
+  displayName: 'Check for test projects' 
+
 - task: DotNetCoreCLI@2 # this will use the .NET Core CLI task
   displayName: 'Restore dependencies' # this will show the name of the task in the pipeline run
   inputs:
     command: 'restore' # this will run the dotnet restore command
     projects: '**/*.csproj' # this will restore dependencies for all projects with .csproj extension
-
+  condition: ne(variables['checkIfExists.skipTestOrFile'], 'true') # this will skip the task if there are no test projects
+      
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: 'innoShop Sonarqube'
+    scannerMode: 'MSBuild'
+    configMode: manual
+    projectKey: 'InnoShop_locations_AYtsV2cIl2vDpsTvJ-Xy'
+    projectName: 'locations'
+    projectVersion: '$(Build.BuildNumber)'
+    extraProperties: |
+      sonar.cs.vstest.reportsPaths=$(Agent.TempDirectory)/*.trx
+      sonar.cs.opencover.reportsPaths=$(Agent.TempDirectory)/*/coverage.opencover.xml
+    
 - task: DotNetCoreCLI@2
   displayName: 'Build'
   inputs:
     command: 'build'
     projects: '**/*.csproj'
-    arguments: '--configuration $(buildConfiguration)' # this will use the variable defined earlier
+    arguments: --configuration $(buildConfiguration) /p:TreatWarningsAsErrors=true # this will use the variable defined earlier and treat warnings as errors
+  condition: ne(variables['checkIfExists.skipTestOrFile'], 'true') # this will skip the task if there are no test projects
 
 - task: DotNetCoreCLI@2
-  displayName: 'Test'
+  displayName: 'Unit Test'
   inputs:
     command: 'test'
     projects: '**/*.Tests.Unit.csproj' # this will run tests for all projects with .Tests.Unit suffix
-    arguments: '--configuration $(buildConfiguration) --collect:"XPlat Code Coverage"' # this will enable code coverage collection
+    arguments: --configuration $(buildConfiguration) --collect:"XPlat Code Coverage;Format=cobertura,opencover" # this will enable code coverage collection
+    publishTestResults: true
 
-- task: PublishCodeCoverageResults@1 # this will use the Publish Code Coverage Results task
+- task: reportgenerator@5
+  displayName: 'Merge code coverage reports'
+  inputs:
+    reports: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+    targetdir: '$(Pipeline.Workspace)/coverlet'
+    reporttypes: 'Cobertura'
+    verbosity: 'Verbose'
+  condition: ne(variables['checkIfExists.skipTestOrFile'], 'true') # this will skip the task if there are no test projects
+
+- task: PublishCodeCoverageResults@1
   displayName: 'Publish code coverage results'
   inputs:
-    codeCoverageTool: 'Cobertura' # this will use Cobertura as the code coverage tool
-    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml' # this will use the generated code coverage file
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(Pipeline.Workspace)/coverlet/Cobertura.xml'
+    
+- task: SonarQubeAnalyze@5
+  inputs:
+    jdkversion: 'JAVA_HOME_11_X64'
+  condition: ne(variables['checkIfExists.skipTestOrFile'], 'true') # this will skip the task if there are no test projects
+
+- task: SonarQubePublish@5
+  inputs:
+    pollingTimeoutSec: '300'
+
+- task: Bash@3
+  displayName: 'QualityGate Status'
+  inputs:
+    targetType: 'inline'
+    failOnStderr: true
+    script: |
+      branch=$(Build.SourceBranch)
+      branchnew=$(echo $branch | sed "s/refs\/\(heads\|pull\)\///")
+      echo $branchnew
+
+      if [[ $branch == refs/heads/* ]]; then
+          echo "This is a branch of type refs/heads."
+
+          projectStatus=$(curl -s -u "$(SONAR_TOKEN)": "http://3.126.93.70:9000/api/qualitygates/project_status?projectKey=$(PROJECTKEY)&branch=$branchnew" | jq -r .projectStatus.status)
+
+          echo STATUS: $projectStatus
+          echo $(Build.SourceBranchName)
+          echo $(Build.SourceBranch)
+
+          if [[ $projectStatus == 'OK' ]];
+          then
+              echo "Quality Gate Succeeded"
+              exit 0
+          else
+              echo "Quality gate failed!!! Status: $projectStatus"
+              exit 1
+          fi
+
+      elif [[ $branch == refs/pull/* ]]; then
+          echo "This is a branch of type refs/pull."
+          pullrequestid=$(System.PullRequest.PullRequestId)
+
+          projectStatus=$(curl -s -u "$(SONAR_TOKEN)": "http://3.126.93.70:9000/api/qualitygates/project_status?projectKey=$(PROJECTKEY)&pullRequest=$pullrequestid" | jq -r .projectStatus.status)
+
+          echo STATUS: $projectStatus
+          echo $(Build.SourceBranchName)
+          echo $(Build.SourceBranch)
+
+          if [[ $projectStatus == 'OK' ]];
+          then
+              echo "Quality Gate Succeeded"
+              exit 0
+          else
+              echo "Quality gate failed!!! Status: $projectStatus"
+              exit 1
+          fi
+
+      else
+          echo "The branch type is not recognized."
+          # Handle any other cases here.
+
+      fi
+  condition: ne(variables['checkIfExists.skipTestOrFile'], 'true') # this will skip the task if there are no test projects
