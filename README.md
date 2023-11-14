@@ -1,5 +1,8 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+Locations: This is a microservice that defines and manages the locations of the platform, such as the physical stores, warehouses, or distribution centers. 
+It helps the platform to store and deliver the products to the customers, and to offer different services and options to the customers, such as shipping, 
+pickup, or store visit. It communicates with other microservices, such as the order management, the inventory management, and the notification service, 
+to optimize the inventory and logistics, and to reduce the costs and time. 
 
 # Getting Started
 TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
