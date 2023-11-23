@@ -1,4 +1,5 @@
 ﻿using Application.Commands;
+using Application.Queries;
 using Domain.Models.Requests;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace Presentation.Controllers
     /// <summary>
     /// Represents the controller class for Location service.
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("api/locations")]
     [ApiController]
     public class LocationController : ControllerBase
     {
@@ -43,6 +44,21 @@ namespace Presentation.Controllers
             }
 
             return createLocationResponse.MapErrorsToResponse();
+        }
+
+        /// <summary>
+        ///  HttpGet endpoint which gets all locations from the database.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>A Task with the proper response code and a list of locations.</returns>
+        [HttpGet(Name = "GetLocations")]
+        public async Task<IActionResult> GetLocations([FromQuery] GetLocationsRequest request)
+        {
+            var getLocationsQuery = new GetLocationsQuery(request);
+
+            var getLocationsQueryResponse = await _mediator.Send(getLocationsQuery);
+
+            return Ok(getLocationsQueryResponse);
         }
     }
 }

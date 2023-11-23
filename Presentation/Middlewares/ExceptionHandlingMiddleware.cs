@@ -33,7 +33,7 @@ namespace Presentation.Middlewares
             }
             catch (Exception ex)
             {
-                _logger.LogError("Server error.", ex.Message);
+                _logger.LogError("Server error. {message}", ex.Message);
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
                 ProblemDetails problemDetails = new()

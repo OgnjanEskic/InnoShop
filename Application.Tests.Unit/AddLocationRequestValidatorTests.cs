@@ -46,7 +46,7 @@ namespace Application.Tests.Unit
             var result = _validator.Validate(request);
 
             //Assert
-            Assert.That(result.Errors.Where(x => x.PropertyName.Contains("Name")).Any(), Is.True);
+            Assert.That(result.Errors.Any(x => x.PropertyName.Contains("Name")), Is.True);
         }
     }
 }

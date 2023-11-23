@@ -66,6 +66,25 @@ namespace Infrastructure.Tests.Unit
 
         }
 
+        [Test]
+        public async Task GetLocationsAsync_WithValidPaginationParameters_ReturnsCorrectPaginatedData()
+        {
+            //Arrange
+            _locationDbContext.Locations.AddRange(
+                new Location { Name = "Location1", Description = "Desc1" },
+                new Location { Name = "Location2", Description = "Desc2" },
+                new Location { Name = "Location3", Description = "Desc3" }
+                );
+
+            await _locationDbContext.SaveChangesAsync();
+
+            //Act
+            var response = await _locationRepository.GetLocationsAsync(new GetLocationsRequest { PageNumber = 1, PageSize = 2 });
+
+            // Assert
+            Assert.That(response.Locations, Has.Count.EqualTo(2));
+        }
+
         [OneTimeTearDown]
         public void TearDown()
         {

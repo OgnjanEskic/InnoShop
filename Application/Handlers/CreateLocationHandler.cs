@@ -46,7 +46,7 @@ namespace Application.Handlers
 
             if (!validationResult.IsValid)
             {
-                _logger.LogError("Sending bad request due to request data validation failure, Errors: ", validationResult.Errors);
+                _logger.LogError("Sending bad request due to request data validation failure, Errors: {errors}", validationResult.Errors);
                 Error error = new("Validation Failure");
 
                 foreach (var validationFailure in validationResult.Errors.Select(x => x.ErrorMessage))

@@ -64,5 +64,34 @@ namespace Infrastructure
 
             return Result.Ok(locationResponse);
         }
+
+        ///<inheritdoc/>
+        public async Task<GetLocationsQueryResponse> GetLocationsAsync(GetLocationsRequest getLocationsRequest)
+        {
+            var locations = await _locationDbContext.Locations
+                        .Skip((getLocationsRequest.PageNumber - 1) * getLocationsRequest.PageSize)
+                        .Take(getLocationsRequest.PageSize)
+                        .ToListAsync();
+
+            var totalCount = await _locationDbContext.Locations.CountAsync();
+
+            var response = new GetLocationsQueryResponse()
+            {
+                PageSize = getLocationsRequest.PageSize,
+                PageNumber = getLocationsRequest.PageNumber,
+                TotalCount = totalCount
+            };
+
+            foreach (var location in locations)
+            {
+                response.Locations.Add(new()
+                {
+                    Name = location.Name,
+                    Description = location.Description
+                });
+            }
+
+            return response;
+        }
     }
 }
