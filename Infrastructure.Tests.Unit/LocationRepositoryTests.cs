@@ -6,10 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Tests.Unit
 {
-    public class LocationRepositoryTests
+    public sealed class LocationRepositoryTests
     {
         private LocationDbContext _locationDbContext;
         private LocationRepository _locationRepository;
+        private LocationRequest _locationRequest;
+        private Location _location;
 
         [SetUp]
         public void Setup()
@@ -27,21 +29,27 @@ namespace Infrastructure.Tests.Unit
             _locationDbContext.Database.EnsureCreated();
 
             _locationRepository = new LocationRepository(_locationDbContext);
+
+            _locationRequest = new()
+            {
+                Name = "name",
+                Description = "description",
+            };
+            _location = new()
+            {
+                Name = "name",
+                Description = "description",
+            };
         }
 
         [Test]
         public async Task InsertLocation_AddLocationToDb_ReturnsInsertedLocationId()
         {
             //Arrange
-            LocationRequest location = new()
-            {
-                Description = "description",
-                Name = "name",
-            };
             var expectedResult = 1;
 
             //Act
-            var result = await _locationRepository.CreateLocation(location);
+            var result = await _locationRepository.CreateLocationAsync(_locationRequest);
 
             //Assert
             Assert.That(result.Value.Id, Is.EqualTo(expectedResult));
@@ -51,18 +59,13 @@ namespace Infrastructure.Tests.Unit
         public async Task InsertLocation_AddAsyncMethodCheck_ReturnsInsertedLocationId()
         {
             //Arrange
-            Location location = new()
-            {
-                Description = "description",
-                Name = "name",
-            };
             var expectedResult = 1;
 
             //Act
-            await _locationDbContext.Locations.AddAsync(location);
+            await _locationDbContext.Locations.AddAsync(_location);
 
             //Assert
-            Assert.That(location.Id, Is.EqualTo(expectedResult));
+            Assert.That(_location.Id, Is.EqualTo(expectedResult));
 
         }
 
@@ -83,6 +86,45 @@ namespace Infrastructure.Tests.Unit
 
             // Assert
             Assert.That(response.Locations, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public async Task DeleteLocation_DeleteLocationFromDb_AssuresInsertedLocationIdIsNotInTheDb()
+        {
+            //Arrange
+            var insertResult = await _locationRepository.CreateLocationAsync(_locationRequest);
+
+            //Act
+            var deleteResult = await _locationRepository.DeleteLocationAsync(insertResult.Value.Id);
+
+            //Assert
+            Assert.That(deleteResult.IsSuccess, Is.EqualTo(true));
+        }
+
+        [Test]
+        public async Task DeleteLocation_FindAsyncMethodCheck_AssuresInsertedLocationIdIsFoundInTheDb()
+        {
+            //Arrange
+            var insertResult = await _locationRepository.CreateLocationAsync(_locationRequest);
+
+            //Act
+            var findResult = _locationDbContext.Locations.FindAsync(insertResult.Value.Id);
+
+            //Assert
+            Assert.That(findResult.IsCompleted, Is.EqualTo(true));
+        }
+
+        [Test]
+        public async Task DeleteLocation_RemoveMethodCheck_AssuresInsertedLocationIEntityStateIsDeleted()
+        {
+            var insertResult = await _locationRepository.CreateLocationAsync(_locationRequest);
+            var findResult = await _locationDbContext.Locations.FindAsync(insertResult.Value.Id);
+
+            //Act
+            var removeResult = _locationDbContext.Remove(findResult!);
+
+            //Assert
+            Assert.That(removeResult.State, Is.EqualTo(EntityState.Deleted));
         }
 
         [OneTimeTearDown]

@@ -31,8 +31,8 @@ namespace Infrastructure
         /// Calls the method to insert Location object into the db.
         /// </summary>
         /// <param name="locationRequest">The type of the object to be written.</param>
-        /// <returns>A Task with the object that contains ID of the inserted row.</returns>
-        public async Task<Result<LocationResponse>> CreateLocation(LocationRequest locationRequest)
+        /// <returns>A Task with the object that contains the ID of inserted row.</returns>
+        public async Task<Result<LocationResponse>> CreateLocationAsync(LocationRequest locationRequest)
         {
             Location location = new()
             {
@@ -92,6 +92,27 @@ namespace Infrastructure
             }
 
             return response;
+        }
+
+        /// <summary>
+        /// Calls the EF method to delete Location object from the database.
+        /// </summary>
+        /// <param name="id">The ID of the object to be deleted.</param>
+        /// <returns>A Task with the result object.</returns>
+        public async Task<Result> DeleteLocationAsync(int id)
+        {
+            var location = await _locationDbContext.Locations.FindAsync(id);
+
+            if (location is null)
+            {
+                return Result.Fail(new Error("Missing key")
+                    .CausedBy("Provided ID does not exists in the database."));
+            }
+
+            _locationDbContext.Remove(location!);
+            await _locationDbContext.SaveChangesAsync();
+
+            return Result.Ok();
         }
     }
 }

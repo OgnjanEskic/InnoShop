@@ -35,6 +35,25 @@ namespace Presentation.Extensions
         }
 
         /// <summary>
+        /// Mapping error results to proper response codes along with the error message.
+        /// </summary>
+        /// <param name="result">FluentResult object.</param>
+        /// <returns>ObjectResult that contains HTTP response code and list of errors that occurred.</returns>
+        public static ObjectResult MapErrorsToResponse(this Result result)
+        {
+            switch (result.Errors.First().Message)
+            {
+                case "Missing key":
+                    return CreateObjectResult(
+                        (int)HttpStatusCode.NotFound, result.Errors.First().Reasons.Select(x => x.Message));
+
+                default:
+                    return CreateObjectResult(
+                        (int)HttpStatusCode.InternalServerError, result.Errors.First().Reasons.Select(x => x.Message));
+            }
+        }
+
+        /// <summary>
         /// Creating ObjectResult filled with proper response code and the error message.
         /// </summary>
         /// <param name="statusCode">HTTP status code.</param>

@@ -57,7 +57,7 @@ namespace Application.Handlers
             }
 
             _logger.LogInformation("Sending data to create new location...");
-            var response = await _locationRepository.CreateLocation(request.Location);
+            var response = await _locationRepository.CreateLocationAsync(request.Location);
             if (response.IsFailed)
             {
                 return response.ToResult();

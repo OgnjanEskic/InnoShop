@@ -1,30 +1,15 @@
 using Application.Commands;
 using Application.Handlers;
-using Application.Validators;
-using Domain.Interfaces;
 using Domain.Models.Requests;
 using Domain.Models.Responses;
 using FluentResults;
-using FluentValidation;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Application.Tests.Unit
 {
     [TestFixture]
-    public class CreateLocationHandlerTests
+    public class CreateLocationHandlerTests : BaseHandlerTests<CreateLocationHandler>
     {
-        private IValidator<LocationRequest> _locationRequestValidator;
-        private Mock<ILocationRepository> _locationRepositoryMock;
-        private Mock<ILogger<CreateLocationHandler>> _logger;
-
-        [SetUp]
-        public void Setup()
-        {
-            _locationRequestValidator = new AddLocationRequestValidator();
-            _locationRepositoryMock = new Mock<ILocationRepository>();
-            _logger = new Mock<ILogger<CreateLocationHandler>>();
-        }
 
         [Test]
         public async Task Handle_CallsValidateAndCreateLocation_ReturnsSuccessFluentResult()
@@ -41,16 +26,16 @@ namespace Application.Tests.Unit
                 Name = "name",
                 Description = "description"
             };
-            _locationRepositoryMock.Setup(x => x.CreateLocation(request)).ReturnsAsync(responseMock);
-            var handler = new CreateLocationHandler(_locationRequestValidator,
-                _locationRepositoryMock.Object, _logger.Object);
+            locationRepositoryMock.Setup(repository => repository.CreateLocationAsync(request)).ReturnsAsync(responseMock);
+            var handler = new CreateLocationHandler(locationRequestValidator,
+                locationRepositoryMock.Object, logger.Object);
             var command = new CreateLocationCommand(request);
 
             //Act
             var result = await handler.Handle(command, default);
 
             //Assert
-            _locationRepositoryMock.Verify(x => x.CreateLocation(request), Times.Once());
+            locationRepositoryMock.Verify(repository => repository.CreateLocationAsync(request), Times.Once());
             Assert.That(result.IsSuccess);
         }
 
@@ -64,8 +49,8 @@ namespace Application.Tests.Unit
                 Name = "",
             };
             var expectedValue = "Validation Failure";
-            var handler = new CreateLocationHandler(_locationRequestValidator,
-                _locationRepositoryMock.Object, _logger.Object);
+            var handler = new CreateLocationHandler(locationRequestValidator,
+                locationRepositoryMock.Object, logger.Object);
             var command = new CreateLocationCommand(request);
 
             //Act
@@ -91,16 +76,16 @@ namespace Application.Tests.Unit
             };
             var response = Result.Fail(new Error("Duplicated key"));
 
-            _locationRepositoryMock.Setup(x => x.CreateLocation(request)).ReturnsAsync(response);
-            var handler = new CreateLocationHandler(_locationRequestValidator,
-                _locationRepositoryMock.Object, _logger.Object);
+            locationRepositoryMock.Setup(repository => repository.CreateLocationAsync(request)).ReturnsAsync(response);
+            var handler = new CreateLocationHandler(locationRequestValidator,
+                locationRepositoryMock.Object, logger.Object);
             var command = new CreateLocationCommand(request);
 
             //Act
             var result = await handler.Handle(command, default);
 
             //Assert
-            _locationRepositoryMock.Verify(x => x.CreateLocation(request), Times.Once());
+            locationRepositoryMock.Verify(repository => repository.CreateLocationAsync(request), Times.Once());
             Assert.That(result.IsFailed);
         }
     }
