@@ -1,7 +1,9 @@
 using Application.Extensions;
 using Application.Validators;
+using Carter;
 using Domain.Interfaces;
 using Domain.Models.Requests;
+using EntityFramework.Exceptions.SqlServer;
 using FluentValidation;
 using Infrastructure;
 using Infrastructure.Context;
@@ -14,14 +16,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<ILocationRepository, LocationRepository>();
 builder.Services.AddScoped<IValidator<LocationRequest>, AddLocationRequestValidator>();
 builder.Services.AddTransient<ExceptionHandlingMiddleware>();
+
 builder.Services.AddControllers();
 builder.Services.AddApplication();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCarter();
+
 builder.Services.AddDbContext<LocationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING"))
+    .UseExceptionProcessor());
 
 var app = builder.Build();
 
@@ -33,6 +38,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapCarter();
 
 app.UseHttpsRedirection();
 

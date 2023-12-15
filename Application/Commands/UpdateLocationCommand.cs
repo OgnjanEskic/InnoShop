@@ -6,22 +6,28 @@ using MediatR;
 namespace Application.Commands
 {
     /// <summary>
-    /// Represents the insert command that is being sent to CreateLocationHandler.
+    /// Represents the update command that is being sent to UpdateLocationCommand.
     /// </summary>
-    public class CreateLocationCommand : IRequest<Result<LocationResponse>>
+    public class UpdateLocationCommand : IRequest<Result<LocationResponse>>
     {
         /// <summary>
-        /// Constructor for CreateLocationCommand class.
+        /// Constructor for UpdateLocationCommand class.
         /// </summary>
         /// <param name="location"></param>
-        public CreateLocationCommand(LocationRequest location)
+        public UpdateLocationCommand(int id, LocationRequest location)
         {
             Location = location;
+            Id = id;
         }
 
         /// <summary>
         /// Gets the Location parameter.
         /// </summary>
         public LocationRequest Location { get; }
+
+        /// <summary>
+        /// Gets the Id parameter.
+        /// </summary>
+        public int Id { get; }
     }
 }

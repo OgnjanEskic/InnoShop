@@ -54,6 +54,32 @@ namespace Presentation.Extensions
         }
 
         /// <summary>
+        /// Mapping error results for MinimalAPI to proper response codes along with the error message.
+        /// </summary>
+        /// <param name="result">FluentResult with LocationResponse object.</param>
+        /// <returns>IResult object for MinimalAPI usage that contains HTTP response code 
+        /// and list of errors that occurred.</returns>
+        public static IResult MapErrorsToMinimalApiResponse(this Result<LocationResponse> result)
+        {
+            switch (result.Errors.First().Message)
+            {
+                case "Validation Failure":
+                    return Results.BadRequest(result.Errors.First().Reasons.Select(x => x.Message));
+
+                case "Duplicated key":
+                    return Results.Conflict(result.Errors.First().Reasons.Select(x => x.Message));
+
+                case "Missing key":
+                    return Results.NotFound(result.Errors.First().Reasons.Select(x => x.Message));
+
+                default:
+                    return Results.Problem(
+                        result.Errors.First().Reasons.Select(x => x.Message).ToString(), null,
+                        (int)HttpStatusCode.InternalServerError, "Internal Server Error");
+            }
+        }
+
+        /// <summary>
         /// Creating ObjectResult filled with proper response code and the error message.
         /// </summary>
         /// <param name="statusCode">HTTP status code.</param>

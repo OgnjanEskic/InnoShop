@@ -70,6 +70,35 @@ namespace Infrastructure.Tests.Unit
         }
 
         [Test]
+        public async Task EditLocation_SaveChangesAsync_ChecksEditedLocationName()
+        {
+            //Arrange
+            string name = "Name changed";
+            await _locationDbContext.Locations.AddAsync(_location);
+            await _locationDbContext.Locations.FindAsync(_location.Id);
+
+            //Act
+            _location.Name = name;
+            await _locationDbContext.SaveChangesAsync();
+
+            //Assert
+            Assert.That(_location.Name, Is.EqualTo(name));
+        }
+
+        [Test]
+        public async Task EditLocation_LocationIsNull_FailedWithMissingKeyError()
+        {
+            //Arrange
+            await _locationDbContext.Locations.AddAsync(_location);
+
+            //Act
+            var result = await _locationDbContext.Locations.FindAsync(_location.Id + 1);
+
+            //Assert
+            Assert.That(result?.Id, Is.EqualTo(null));
+        }
+
+        [Test]
         public async Task GetLocationsAsync_WithValidPaginationParameters_ReturnsCorrectPaginatedData()
         {
             //Arrange
